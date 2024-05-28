@@ -18,6 +18,9 @@ class CovPlot:
     TODO:
         - Implement some check for genome length
         - Implement peak colorization
+        - Implement coverage cleanup, only coverages for needed chromosomes
+            should be loaded into memory
+        - Figure out scaling factor line location in final plot
     
     """
 
@@ -76,7 +79,7 @@ class CovPlot:
         pass
 
     @staticmethod
-    def load_gff(gff: Union[str, Path], locus: str) -> pd.DataFrame:
+    def load_gff(gff: Union[str, Path]) -> pd.DataFrame:
         """
         Generalized gff processing for this purpose
         Unoptimized right now, as this would be called in a loop,
@@ -85,7 +88,7 @@ class CovPlot:
         # Do not infer headers, we filter them out anyway and dont need them
         # Headers in gff files rely too much on the person which created it
         # Remove comments, as some gffs have coments in headers
-        if not isinstance(loci, Union[str, Path]):
+        if not isinstance(gff, Union[str, Path]):
             raise TypeError("Gff file should be given as a string or path to file location")
 
         df = pd.read_table(gff, header = None, comment= "#")
