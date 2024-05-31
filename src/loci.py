@@ -30,3 +30,15 @@ class loci:
         if not isinstance(self.path, str):
             raise TypeError("Path should be a string")
         self.loci = pd.read_table(self.path, header = None, comment = '#')
+
+        return self.loci
+
+    def to_list(self):
+        locus_list = []
+        for i in range(len(self.loci)):
+            for j in range(len(self.loci[i])):
+                locus_list.append(self.loci[i][j])
+
+        self.loci = locus_list
+
+        return self.loci

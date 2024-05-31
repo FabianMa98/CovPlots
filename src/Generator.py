@@ -6,9 +6,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
-from .constants import WINDOW, MUTATION_SCALE, ALPHA, LINEWIDTH
+from .constants import WINDOW, MUTATION_SCALE, ALPHA, LINEWIDTH, FACTOR
 from .utils import search_string
 from .gff import gff
+from .loci import Loci
+
 from typing import List, Union
 from pathlib import Path
 
@@ -111,43 +113,15 @@ class CovPlot:
 
         return df_start_end
 
-    def standardise_chromosomes(gff: pd.DataFrame) -> pd.DataFrame:
-        """
-        Standardize chromosomes (especially relevant for bacteria 
-        ToDo: Implement own MAP file for chromosomess
-        This might have to moved to utils or standalone implementation of 
-        gff file
-        
-        parameters
-        ----------
-            gff: pd.DataFrame
-                already read and processed gff from specific organism
-
-        returns
-        -------
-            standardised_df: pd.DataFrame
-
-
-        """
-        unique = gff[0].unique()
-        chr_dict = {}
-        for i in range(len(unique)):
-            curr = i + 1
-            chr_dict[unique[i]] = "Chr" + str(curr)
-
-        standardised_df = gff.replace(chr_dict)
-
-        return standardised_df 
-
-    def plot_locus(self, locus, output_path, peak_coords, arrow_color = "black", line_color = "grey", peak_color = "deeppink",
+    def plot_locus(self, locus, output_path, arrow_color = "black", line_color = "grey", peak_color = "deeppink",
                    line_label = "non peak region", peak_label = "peak region"):    
         # arrow_line_loc shoulde calculated dynamically based on maximum peak height
         # arrow_line_loc = -get_maximum_peak_height(window(locus)) / SOME_FACTOR 
-        arrow_line_loc = -5
         # dont write text on arrows, this should be done manually
         # text_loc = - 4
         x = np.array(self.coverage.index)
         y = np.array(self.coverage.iloc[locus["start"] -  WINDOW : locus["end"] + WINDOW]["depth"])
+        arrow_line_loc = -(round(y)) / FACTOR
 
         #x_upper = np.ma.masked_where(x > peak_coords["peak_start"], x)
         #x_lower = np.ma.masked_where(x < peak_coords["peak_end"], x)
@@ -164,7 +138,7 @@ class CovPlot:
         #ax.plot(x_middle, y, color = peak_color, label = peak_label)
         #ax.plot(x_upper, y, color = line_color)
         ax.plot(x, y, color = line_color)
-        #ax.plot(x, arrow_line, color = arrow_color, linewidth = LINEWIDTH)
+        ax.plot(x, arrow_line, color = arrow_color, linewidth = LINEWIDTH)
         ax.add_patch(arrow)
         ax.set_ylabel("read coverage")
         ax.set_xlabel("genomic coordinates")
@@ -175,20 +149,17 @@ class CovPlot:
         plt.close(fig)
 
 
-    def plot_all_loci(self):
+    def plot_all_loci(self, output_path):
         """
         Move plot logic to other function
         """
-        gff = CovPlot.load_gff(self.gff)
-        loci = CovPlot.load_loci(self.loci)
         #Pseudocode for locis (peak files from GEM)
         # peak_files = self.read_loci(self._loci)
-        for locus in loci:
+        for locus in self.loci:
             # filter locus from gff
+            filtered_gff = self.filter_gff(gff, locus)
+
             # Create window around locus coordinates 
             # self.plot_locus(locus)
-            self.plot(locus)
-
-
-    def plot_by_coordinates(self):
-        pass
+            self.plot_locus(locus, output_path)
+        

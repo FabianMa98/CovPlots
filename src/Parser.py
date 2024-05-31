@@ -52,6 +52,15 @@ class GeneratorParser(BaseParser):
             raise FileNotFoundError(f"{args.coverage} file was not found")
         if not isinstance(args.coverage, str):
             raise TypeError("Path to coverage file must be a string")
+        
+        if not os.path.exists(args.gff):
+            raise FileNotFoundError(f"{args.gff} could not be found")
+        
+        if not os.path.exists(args.loci):
+            raise FileNotFoundError(f"{args.loci} file was not found")
+        
+        if not os.path.isdir(args.output_dir):
+            raise OSError(f"{args.output_dir} is not a directory")
 
         for path in [args.output_dir]:
             if not os.path.exists(path):
