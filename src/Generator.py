@@ -20,16 +20,17 @@ class CovPlot:
         - Implement peak colorization
         - Implement coverage cleanup, only coverages for needed chromosomes
             should be loaded into memory
+        - Should also load coverage as n-dimensional nparray (more memory efficient?)
         - Figure out scaling factor line location in final plot
+            - DONE: Around 6.5 (Factor for DAP-seq manuscript)
     
     """
 
-    def __init__(self, coverage: np.ndarray, loci: pd.DataFrame, gff_coordinates, peaks):
+    def __init__(self, coverage: np.ndarray, loci: pd.DataFrame, gff_coordinates):
         self.coverage = coverage
         self.loci = loci
         self.gff = gff_coordinates
-        self.peaks = peaks
-        
+
     @property
     def coverage(self):
         return self._coverage
@@ -138,7 +139,7 @@ class CovPlot:
 
         return standardised_df 
 
-    def plot_locus(self, locus, peak_coords, arrow_color = "black", line_color = "grey", peak_color = "deeppink",
+    def plot_locus(self, locus, output_path, peak_coords, arrow_color = "black", line_color = "grey", peak_color = "deeppink",
                    line_label = "non peak region", peak_label = "peak region"):    
         # arrow_line_loc shoulde calculated dynamically based on maximum peak height
         # arrow_line_loc = -get_maximum_peak_height(window(locus)) / SOME_FACTOR 
@@ -148,9 +149,10 @@ class CovPlot:
         x = np.array(self.coverage.index)
         y = np.array(self.coverage.iloc[locus["start"] -  WINDOW : locus["end"] + WINDOW]["depth"])
 
-        x_upper = np.ma.masked_where(x > peak_coords["peak_start"], x)
-        x_lower = np.ma.masked_where(x < peak_coords["peak_end"], x)
-        x_middle = np.ma.masked_where((x > peak_coords["peak_end"]) | (x < peak_coords["peak_start"]), x)
+        #x_upper = np.ma.masked_where(x > peak_coords["peak_start"], x)
+        #x_lower = np.ma.masked_where(x < peak_coords["peak_end"], x)
+        #x_middle = np.ma.masked_where((x > peak_coords["peak_end"]) | (x < peak_coords["peak_start"]), x)
+
         arrow_line = np.array([arrow_line_loc] * len(x))
         
         arrow = mpatches.FancyArrow((locus["start"], arrow_line_loc), (locus["end"], arrow_line_loc),
@@ -158,11 +160,19 @@ class CovPlot:
         
         # Initialize plot
         fig, ax = plt.subplots()
-        ax.plot(x_lower, y, color = line_color, label = line_label)
-        ax.plot(x_middle, y, color = peak_color, label = peak_label)
-        ax.plot(x_upper, y, color = line_color)
-        ax.plot(x, arrow_line, color = arrow_color, linewidth = LINEWIDTH)
+        #ax.plot(x_lower, y, color = line_color, label = line_label)
+        #ax.plot(x_middle, y, color = peak_color, label = peak_label)
+        #ax.plot(x_upper, y, color = line_color)
+        ax.plot(x, y, color = line_color)
+        #ax.plot(x, arrow_line, color = arrow_color, linewidth = LINEWIDTH)
         ax.add_patch(arrow)
+        ax.set_ylabel("read coverage")
+        ax.set_xlabel("genomic coordinates")
+        yticks = ax[0,0].yaxis.get_major_ticks()
+        yticks[-1].set_visible(False)
+
+        fig.savefig(output_path)
+        plt.close(fig)
 
 
     def plot_all_loci(self):
@@ -173,11 +183,12 @@ class CovPlot:
         loci = CovPlot.load_loci(self.loci)
         #Pseudocode for locis (peak files from GEM)
         # peak_files = self.read_loci(self._loci)
-        for locus in self.loci:
+        for locus in loci:
             # filter locus from gff
             # Create window around locus coordinates 
             # self.plot_locus(locus)
-            pass
+            self.plot(locus)
+
 
     def plot_by_coordinates(self):
         pass
