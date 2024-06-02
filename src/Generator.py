@@ -6,10 +6,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
-from .constants import WINDOW, MUTATION_SCALE, ALPHA, LINEWIDTH, FACTOR
-from .utils import search_string
-from .gff import gff
-from .loci import Loci
+from constants import WINDOW, MUTATION_SCALE, ALPHA, LINEWIDTH, FACTOR
+from utils import search_string
+from gff import gff
+from loci import loci
 
 from typing import List, Union
 from pathlib import Path
@@ -24,7 +24,7 @@ class CovPlot:
             should be loaded into memory
         - Should also load coverage as n-dimensional nparray (more memory efficient?)
         - Figure out scaling factor line location in final plot
-            - DONE: Around 6.5 (Factor for DAP-seq manuscript)
+            - DONE: Around 6.5 (Factor from DAP-seq manuscript)
     
     """
 

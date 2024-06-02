@@ -11,8 +11,9 @@ class gff:
 
     # Constructor
     def __init__(self, path):
-        self.path = path
-        self.standardised_df = None
+        self._path = path
+        self._standardised_df = None
+        self.gff = self.load_gff()
 
     @property
     def path(self):
@@ -20,12 +21,23 @@ class gff:
     
     @path.setter
     def path(self, other_path):
-        self.path = other_path
+        self._path = other_path 
+    
+    #@path.setter
+    #def path(self, other_path):
+    #    self.path = other_path
+
+    @property
+    def standardised_df(self):
+        return self._standardised_df
+    
+    @standardised_df.setter
+    def standardised_df(self, other_df):
+        self._standardised_df = other_df
 
     def load_gff(self):
-        self.gff = pd.read_table(self.path, header = None, comment = '#')
+        self.gff = pd.read_table(self._path, header = None, comment = '#')
 
-    @staticmethod
     def chromosome_maps(self) -> Dict[str, str]:
         """
         Compute chromsome maps

@@ -7,38 +7,41 @@ class loci:
     """
 
     def __init__(self, path):
-        self.path = path
-        self.loci = None
+        self._path = path
+        self._loci = None
+        self.list = None
 
     @property
     def path(self):
-        return self.path
+        return self._path
     
     @path.setter
     def path(self, other_path):
-        self.path = other_path
+        self._path = other_path
 
-    @property
-    def loci(self):
-        return self.loci
+    #@property
+    #def loci(self):
+    #    return self._loci
     
-    @loci.setter
-    def loci(self):
-        """
-        Load loci, which are assumed to be parsed in as tsv
-        """
-        if not isinstance(self.path, str):
-            raise TypeError("Path should be a string")
-        self.loci = pd.read_table(self.path, header = None, comment = '#')
+    #@loci.setter
+    #def loci(self, other_loci):
+    #    """
+    #    Load loci, which are assumed to be parsed in as tsv
+    #    """
+    #    if not isinstance(self.path, str):
+    #        raise TypeError("Path should be a string")
+    #    self._loci = pd.read_table(self.path, header = None, comment = '#')
 
-        return self.loci
+    def load_loci(self):
+        self._loci = pd.read_table(self._path, header = None, comment = '#')
 
     def to_list(self):
         locus_list = []
-        for i in range(len(self.loci)):
-            for j in range(len(self.loci[i])):
-                locus_list.append(self.loci[i][j])
+        loci = self.load_loci()
+        for i in range(len(loci)):
+            for j in range(len(loci[i])):
+                locus_list.append(loci[i][j])
 
-        self.loci = locus_list
+        self.list = locus_list
 
-        return self.loci
+        return 
