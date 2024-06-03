@@ -18,7 +18,7 @@ class CovPlot:
     """Initialize coverage Plots and spefic methods for 
     
     TODO:
-        - Implement some check for genome length
+        - Implement some check chromsome localization of locus
         - Implement peak colorization
         - Implement coverage cleanup, only coverages for needed chromosomes
             should be loaded into memory
@@ -28,10 +28,10 @@ class CovPlot:
     
     """
 
-    def __init__(self, coverage: np.ndarray, loci: pd.DataFrame, gff_coordinates):
-        self.coverage = coverage
-        self.loci = loci
-        self.gff = gff_coordinates
+    def __init__(self, coverage: pd.DataFrame, loci: List, gff_coordinates: pd.DataFrame):
+        self._coverage = coverage
+        self._lociList = loci
+        self._gff = gff_coordinates
 
     @property
     def coverage(self):
@@ -43,43 +43,28 @@ class CovPlot:
 
     @property
     def loci(self):
-        return self._loci
+        return self._lociList
 
     @loci.setter
     def loci(self, other_loci):
-        self.loci = other_loci
+        self._lociList = other_loci
 
     @property
     def peaks(self):
-        return self.peaks
+        return self._peaks
     
     @peaks.setter
     def peaks(self, other_peaks):
-        self.peaks = other_peaks
+        self._peaks = other_peaks
 
     @property
     def gff_coordinates(self):
-        return self.gff
+        return self._gff
 
     @gff_coordinates.setter
     def gff_coordinates(self, other_gff):
-        self.gff = other_gff
-
-
-    @staticmethod
-    def load_loci(loci: Union[str, Path]) -> pd.DataFrame:
-        """
-        Loci should be parsed as a tsv
-        """
-        if not isinstance(loci, Union[str, Path]):
-            raise TypeError("Table of loci needs to be path to file")
-        df = pd.read_table(loci)
-
-        return df
+        self._gff = other_gff
     
-    @staticmethod
-    def process_loci(loci: pd.DataFrame) -> List:
-        pass
 
     @staticmethod
     def load_gff(gff: Union[str, Path]) -> pd.DataFrame:
@@ -97,8 +82,7 @@ class CovPlot:
         df = pd.read_table(gff, header = None, comment= "#")
         return df
     
-    @staticmethod
-    def filter_gff(gff_df: pd.DataFrame, locus: str) -> pd.DataFrame:
+    def filter_gff(self, gff_df: pd.DataFrame, locus: str) -> pd.DataFrame:
         """
         Moved loading to another function as this can be called once
         Should i keep it as a static method?
@@ -142,24 +126,21 @@ class CovPlot:
         ax.add_patch(arrow)
         ax.set_ylabel("read coverage")
         ax.set_xlabel("genomic coordinates")
-        yticks = ax[0,0].yaxis.get_major_ticks()
+        yticks = ax.yaxis.get_major_ticks()
         yticks[-1].set_visible(False)
 
         fig.savefig(output_path)
         plt.close(fig)
 
-
     def plot_all_loci(self, output_path):
         """
         Move plot logic to other function
         """
-        #Pseudocode for locis (peak files from GEM)
-        # peak_files = self.read_loci(self._loci)
-        for locus in self.loci:
+        for locus in self._lociList:
             # filter locus from gff
-            filtered_gff = self.filter_gff(gff, locus)
+            filtered_gff = self.filter_gff(self._gff, locus)
 
             # Create window around locus coordinates 
             # self.plot_locus(locus)
-            self.plot_locus(locus, output_path)
+            self.plot_locus(filtered_gff, output_path = output_path)
         
