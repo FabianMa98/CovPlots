@@ -7,9 +7,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
 from constants import WINDOW, MUTATION_SCALE, ALPHA, LINEWIDTH, FACTOR
-from utils import search_string
-from gff import gff
-from loci import loci
+from utils import search_string, get_max_height
 
 from typing import List, Union
 from pathlib import Path
@@ -82,13 +80,13 @@ class CovPlot:
         df = pd.read_table(gff, header = None, comment= "#")
         return df
     
-    def filter_gff(self, gff_df: pd.DataFrame, locus: str) -> pd.DataFrame:
+    def filter_gff(self, locus) -> pd.DataFrame:
         """
         Moved loading to another function as this can be called once
         Should i keep it as a static method?
         Need 
         """
-        gene_df = gff_df.apply(lambda x: x.map(lambda s: search_string(s, "gene")))
+        gene_df = self._gff.apply(lambda x: x.map(lambda s: search_string(s, "gene")))
         filtered_df = gene_df.loc[gene_df.any(axis=1)]
         # from filtered gff get start end columns
         df = filtered_df[filtered_df[len(filtered_df.columns - 1)]].str.contains(locus).select_dtype("int")
@@ -105,7 +103,7 @@ class CovPlot:
         # text_loc = - 4
         x = np.array(self.coverage.index)
         y = np.array(self.coverage.iloc[locus["start"] -  WINDOW : locus["end"] + WINDOW]["depth"])
-        arrow_line_loc = -(round(y)) / FACTOR
+        arrow_line_loc = -(round(get_max_height(y) / FACTOR)) 
 
         #x_upper = np.ma.masked_where(x > peak_coords["peak_start"], x)
         #x_lower = np.ma.masked_where(x < peak_coords["peak_end"], x)
@@ -138,9 +136,9 @@ class CovPlot:
         """
         for locus in self._lociList:
             # filter locus from gff
-            filtered_gff = self.filter_gff(self._gff, locus)
+            self.filtered_gff = self.filter_gff(locus)
 
             # Create window around locus coordinates 
             # self.plot_locus(locus)
-            self.plot_locus(filtered_gff, output_path = output_path)
+            self.plot_locus(self.filtered_gff, output_path = output_path)
         

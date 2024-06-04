@@ -26,19 +26,6 @@ class loci:
     @loci.setter
     def loci(self, other_loci):
         self._loci = other_loci
-    
-    #@property
-    #def loci(self):
-    #    return self._loci
-    
-    #@loci.setter
-    #def loci(self, other_loci):
-    #    """
-    #    Load loci, which are assumed to be parsed in as tsv
-    #    """
-    #    if not isinstance(self.path, str):
-    #        raise TypeError("Path should be a string")
-    #    self._loci = pd.read_table(self.path, header = None, comment = '#')
 
     def load_loci(self):
         self._loci = pd.read_table(self._path, header = None, comment = '#')
