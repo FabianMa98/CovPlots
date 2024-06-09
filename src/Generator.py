@@ -102,49 +102,32 @@ class CovPlot:
 
     def plot_locus(self, locus, output_path, arrow_color = "black", line_color = "grey", peak_color = "deeppink",
                    line_label = "non peak region", peak_label = "peak region"):    
-        # arrow_line_loc shoulde calculated dynamically based on maximum peak height
-        # arrow_line_loc = -get_maximum_peak_height(window(locus)) / SOME_FACTOR 
-        # dont write text on arrows, this should be done manually
-        # text_loc = - 4
         self.loaded_coverage = self.load_coverage()
-        genomic_coordinates = self.loaded_coverage.loc[int(locus.iloc[:,2].iloc[0] - WINDOW) : int(locus.iloc[:, 3].iloc[0]) + WINDOW]["depth"]
-        #print(locus)
-        #print(int(locus.iloc[:,2]))
-        #print(locus.iloc[:,3])
-        #int(locus.iloc[:,2].iloc[0]
-        #print(self.loaded_coverage)
-        #self.loaded_coverage.loc[int(locus.iloc[:,2].iloc[0]) -  WINDOW : int(locus.iloc[:, 3].iloc[0]) + WINDOW]["depth"]
-        #test = self.loaded_coverage["depth"].loc[int(locus.iloc[:,2].iloc[0]) -  WINDOW : int(locus.iloc[:, 3].iloc[0]) + WINDOW]
+        chromosome_cov = (self.loaded_coverage[self.loaded_coverage["chromosome"] == locus["chromosome"].iloc[0]]
+                          .reset_index()
+                          .drop(columns = ["index"])
+                          )
+        print(chromosome_cov)
+        genomic_coordinates = chromosome_cov.loc[int(locus.iloc[:,2].iloc[0] - WINDOW) : int(locus.iloc[:, 3].iloc[0]) + WINDOW]["depth"]
+
         y = np.array(genomic_coordinates)
         x = genomic_coordinates.index
-        #print(self.loaded_coverage["depth"])
-        #print(self.loaded_coverage-loc[int(locus.iloc[:,2].iloc[0]) - WINDOW : int(locus.iloc[:,3].iloc[0]) + WINDOW]["depth"])
-        #print(test)
         arrow_line_loc = -(round(get_max_height(y) / FACTOR)) 
         print(arrow_line_loc)
-        #x_upper = np.ma.masked_where(x > peak_coords["peak_start"], x)
-        #x_lower = np.ma.masked_where(x < peak_coords["peak_end"], x)
-        #x_middle = np.ma.masked_where((x > peak_coords["peak_end"]) | (x < peak_coords["peak_start"]), x)
 
         arrow_line = np.array([arrow_line_loc] * len(x))
         print(locus["start"].iloc[0], locus["end"].iloc[0])
-        
-        #arrow = mpatches.FancyArrow((locus["start"].iloc[0], arrow_line_loc), (locus["end"].iloc[0], arrow_line_loc),
-        #                            mutation_scale = MUTATION_SCALE, alpha = ALPHA, color = arrow_color)
-        
-        
+            
         arrow_1 = mpatches.FancyArrowPatch((locus.iloc[0]["start"], arrow_line_loc), (locus.iloc[0]["end"], arrow_line_loc), mutation_scale = MUTATION_SCALE, alpha = 0.8,
                                     color = "black")
         # Initialize plot
         fig, ax = plt.subplots()
-        #ax.plot(x_lower, y, color = line_color, label = line_label)
-        #ax.plot(x_middle, y, color = peak_color, label = peak_label)
-        #ax.plot(x_upper, y, color = line_color)
         ax.plot(x, y, color = line_color)
         ax.plot(x, arrow_line, color = arrow_color, linewidth = LINEWIDTH)
         ax.add_patch(arrow_1)
         ax.set_ylabel("read coverage")
-        ax.set_xlabel("genomic coordinates")
+        ax.set_xlabel(f"genomic coordinates for {locus.iloc[0]["gene_id"]} on chromosome {locus.iloc[0]["chromosome"]}")
+        ax.set_xlim(left = locus.iloc[0]["start"] - WINDOW , right = locus.iloc[0]["end"] + WINDOW)
         yticks = ax.yaxis.get_major_ticks()
         yticks[-1].set_visible(False)
 
