@@ -42,3 +42,6 @@ class loci:
         self._list = locus_list
 
         return self._list
+    
+    def to_df(self):
+        pass

@@ -55,3 +55,6 @@ class GeneratorParser(BaseParser):
             os.path.makedirs(args.output_dir)
             if not os.path.isdir(args.output_dir):
                 raise OSError(f"{args.output_dir} is not a directory")
+            
+        if not os.path.isdir(args.output_dir):
+            raise OSError(f"{args.output_dir} is not a directory")
