@@ -14,4 +14,16 @@ def get_max_height(coverage: np.ndarray) -> int:
     return max_cov
 
 def get_max_coordinates(coverage: np.ndarray):
-    pass
+    """
+    get coordinates from max_cov for automatic "peak"
+    
+    Parameters
+    ----------
+    coverage: np.ndarray
+        chromosome filtered coverage
+    """
+    # Set coverage pos to index
+    max_id = coverage["depth"].idxmax()
+    peak_interval = [max_id - 100, max_id + 100]
+
+    return peak_interval

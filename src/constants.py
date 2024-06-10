@@ -11,4 +11,4 @@ LINEWIDTH = 1.5
 # CONSTANT FOR LINE LOC LOCATION
 # This implies that the maximum coverage in our window should be higher than 6.5
 # Throw error if this is not the case (for e.g with message: No significant coverage found?)
-FACTOR = 6.5
+FACTOR = 8
