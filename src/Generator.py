@@ -143,9 +143,11 @@ class CovPlot:
                 ax.plot(x_middle, y, color = peak_color)
                 ax.plot(x_upper, y, color = line_color)
             else:
+                print("Printing line label")
                 ax.plot(x_lower, y, color = line_color, label = line_label)
                 ax.plot(x_middle, y, color = peak_color, label = peak_label)
                 ax.plot(x_upper, y, color = line_color)
+                fig.legend(("non peak region", "peak region"), loc="upper right")
             ax.plot(x, arrow_line, color = arrow_color, linewidth = LINEWIDTH)
             ax.add_patch(arrow_1)
             ax.set_ylabel("read coverage")
@@ -178,11 +180,14 @@ class CovPlot:
         """
         Move plot logic to other function
         """
-        for locus in self._lociList:
+        for i, locus in enumerate(self._lociList):
             # filter locus from gff
             filtered = self.filter_gff(locus)
 
             # Create window around locus coordinates 
             # self.plot_locus(locus)
-            self.plot_locus(filtered, output_path = output_path)
+            if i == 0:
+                self.plot_locus(filtered, output_path = output_path, plot_label=True)
+            else:
+                self.plot_locus(filtered, output_path = output_path)
         
