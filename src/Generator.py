@@ -29,10 +29,10 @@ class CovPlot:
         - Add text to arrows
         - Do not allow for negative genomic coordinates at window calculation
         - Add strand support 
-        - Implement check for loci inside peak window
+        - Think about what happens
     """
 
-    def __init__(self, coverage: Union[str, Path], gff_coordinates: gff, loci: Union[List, None] = None, peaks: Union[pd.DataFrame, None] = None):
+    def __init__(self, coverage: Union[str, Path], gff_coordinates: gff, loci: Union[List, None] = None, peaks: Union[Path, str, None] = None):
         """
         Constructor for Covplot class
 
@@ -41,12 +41,14 @@ class CovPlot:
         coverage: pd.DataFrame
             coverage file from samtools output as DataFrame
             with cols: chromosome, pos, depth
-        loci: List
+        loci: List, None
             inherited from list class, but already converted
             to a List for ease of used
         gff_coordinates: gff
             Own gff implementation for proper filtering
             Can be standardized for chromosoome filtering
+        peaks: Path, str, None
+            depends on mode
         """
         self._coverage = coverage
         self._lociList = loci
@@ -183,9 +185,9 @@ class CovPlot:
                 {0: chromosome, 1: }
         """
         loci = []
-        print(peak)
         peak_window = [peak["start"] - WINDOW, peak["end"] + WINDOW]
-        for _, row in gff.iterrows():
+        gff_chr = gff[gff[0] == peak["chromosome"]]
+        for _, row in gff_chr.iterrows():
             # At worst O(n) if peak near "last" gene
             if row[3] - peak_window[0] >= 0 and row[4] <= peak_window[1]:
                 candidate = [row[0], row[3], row[4], row.iloc[-1]]
@@ -193,23 +195,27 @@ class CovPlot:
                 if row[4] + WINDOW + 1 >= peak_window[1]:
                     break
         # Iterate through both loops, but think of something for more computationally feasible
-        df = pd.DataFrame(loci)
-        last_column = df.iloc[:, -1]
-        names = last_column.str.split(";")
-        replace_list = last_column.tolist()
-        final = []
-        for i, row in enumerate(names):
-            for element in row:
-                if element.startswith("Name="):
-                    name = element.split("=")[1]
-                    final.append(name)
-        final = pd.Series(final)
-        # Create dict with values this replace wont work
-        final_df = df.replace(to_replace = replace_list, value = final)
-        final_df.rename(columns = {0: "chromosome", 1: "start", 2: "end", 3: "name"}, inplace = True)
-        print(final_df)
+        if loci:
+            df = pd.DataFrame(loci)
+            last_column = df.iloc[:, -1]
+            names = last_column.str.split(";")
+            replace_list = last_column.tolist()
+            final = []
+            for i, row in enumerate(names):
+                for element in row:
+                    if element.startswith("Name="):
+                        name = element.split("=")[1]
+                        final.append(name)
+            final = pd.Series(final)
+            # Create dict with values this replace wont work
+            final_df = df.replace(to_replace = replace_list, value = final)
+            final_df.rename(columns = {0: "chromosome", 1: "start", 2: "end", 3: "name"}, inplace = True)
+            #print(final_df)
     
-        return final_df
+            return final_df
+        
+        else:
+            pass
 
     def plot_locus(self, locus, output_path, peak_mode = "auto", arrow_color = "black", line_color = "grey", peak_color = "deeppink",
                    line_label = "non peak region", peak_label = "peak region", plot_label = False):    
@@ -302,12 +308,14 @@ class CovPlot:
             ax.plot(x_middle, y, color = peak_color, label = peak_label)
             ax.plot(x_upper, y, color = line_color)
             fig.legend(("non peak region", "peak region"), loc="upper right")
-        for _, locus in self.peak_loci.iterrows():
-            arrow = mpatches.FancyArrowPatch((locus["start"], arrow_line_loc), (locus["end"], arrow_line_loc), mutation_scale = MUTATION_SCALE, alpha = 0.8,
-                                    color = "black")
+        if self.peak_loci is not None:
+            print(self.peak_loci)
+            for _, locus in self.peak_loci.iterrows():
+                arrow = mpatches.FancyArrowPatch((locus["start"], arrow_line_loc), (locus["end"], arrow_line_loc), mutation_scale = MUTATION_SCALE, alpha = 0.8,
+                                        color = "black")
 
-            ax.plot(x, arrow_line, color = arrow_color, linewidth = LINEWIDTH)
-            ax.add_patch(arrow)
+                ax.plot(x, arrow_line, color = arrow_color, linewidth = LINEWIDTH)
+                ax.add_patch(arrow)
         
         ax.set_ylabel("read coverage")
         ax.set_xlabel(f"genomic coordinates for {peak["peak_name"]}")
@@ -339,6 +347,7 @@ class CovPlot:
         for _, peak in self.peaks.iterrows():
             if i == 0:
                 self.plot_peak(output_path = output_path, peak = peak, loaded_coverage = loaded_coverage, plot_label = True)
+                i += 1
             else:
                 self.plot_peak(output_path = output_path, peak = peak, loaded_coverage = loaded_coverage, plot_label = False)
 
