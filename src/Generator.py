@@ -29,6 +29,7 @@ class CovPlot:
         - Add text to arrows
         - Do not allow for negative genomic coordinates at window calculation
         - Add strand support 
+        - Implement check for loci inside peak window
     """
 
     def __init__(self, coverage: Union[str, Path], gff_coordinates: gff, loci: Union[List, None] = None, peaks: Union[pd.DataFrame, None] = None):
@@ -173,9 +174,7 @@ class CovPlot:
             peak_start and end?
             Right now just peak start, but needs to be adjusted 
         gff: pd.DataFrame
-            standardised dataframe
-        window?
-            is this needed? No right?
+            standardised dataframe from gff class
 
         Returns
         -------
@@ -184,6 +183,7 @@ class CovPlot:
                 {0: chromosome, 1: }
         """
         loci = []
+        print(peak)
         peak_window = [peak["start"] - WINDOW, peak["end"] + WINDOW]
         for _, row in gff.iterrows():
             # At worst O(n) if peak near "last" gene
@@ -194,19 +194,22 @@ class CovPlot:
                     break
         # Iterate through both loops, but think of something for more computationally feasible
         df = pd.DataFrame(loci)
-        names = df.iloc[:, -1].str.split(";")
+        last_column = df.iloc[:, -1]
+        names = last_column.str.split(";")
+        replace_list = last_column.tolist()
         final = []
-        for row in names:
+        for i, row in enumerate(names):
             for element in row:
                 if element.startswith("Name="):
                     name = element.split("=")[1]
                     final.append(name)
         final = pd.Series(final)
-        df.replace(to_replace = df.iloc[:,-1], value = final, inplace = True)
-        df.rename(columns = {0: "chromosome", 1: "start", 2: "end", 3: "name"}, inplace = True)
-        print(df)
+        # Create dict with values this replace wont work
+        final_df = df.replace(to_replace = replace_list, value = final)
+        final_df.rename(columns = {0: "chromosome", 1: "start", 2: "end", 3: "name"}, inplace = True)
+        print(final_df)
     
-        return df
+        return final_df
 
     def plot_locus(self, locus, output_path, peak_mode = "auto", arrow_color = "black", line_color = "grey", peak_color = "deeppink",
                    line_label = "non peak region", peak_label = "peak region", plot_label = False):    
@@ -230,7 +233,6 @@ class CovPlot:
             # If peak mode is set to auto, a peak will be defined around +/- 100 bp around the summit at maximum coverage value
             # within window
             peak_coordinates = get_max_coordinates(full_window)
-            print(peak_coordinates)
             x_upper = np.ma.masked_where(x > peak_coordinates[0], x)
             x_lower = np.ma.masked_where(x < peak_coordinates[1], x)
             x_middle = np.ma.masked_where((x > peak_coordinates[1]) | (x < peak_coordinates[0]), x)
@@ -275,7 +277,6 @@ class CovPlot:
         self.gff_gene = df[df[2] == "gene"]
         self.peak_loci = self.get_loci_inside_peak_window(peak, self.gff_gene)#self._gff.standardise_chromosomes())
         
-        print(self.peak_loci)
         peak_start = peak["start"]
         peak_end = peak["end"]
         chromosome_cov = (loaded_coverage[loaded_coverage["chromosome"] == peak["chromosome"]]
@@ -335,9 +336,7 @@ class CovPlot:
         loaded_coverage = self.load_coverage()
         self.peaks = self.get_peaks()
         i = 0
-        print(self.peaks)
         for _, peak in self.peaks.iterrows():
-            print(peak["start"])
             if i == 0:
                 self.plot_peak(output_path = output_path, peak = peak, loaded_coverage = loaded_coverage, plot_label = True)
             else:
