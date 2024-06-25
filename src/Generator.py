@@ -170,6 +170,11 @@ class CovPlot:
     def get_loci_inside_peak_window(self, peak, gff):
         """Get all loci inside predefined peak window for a speficic peak
 
+        TODO:
+            - Change conditions for which loci are considered
+                Right now if the end of loci is not inside peak window it wont be drawn
+                but start up until window end could and should be made possible
+
         Parameters
         ----------
         peak: DataType still to be decided
@@ -182,17 +187,18 @@ class CovPlot:
         -------
             loci: pd.DataFrame
                 DataFrame with all loci with following columns
-                {0: chromosome, 1: }
         """
         loci = []
         peak_window = [peak["start"] - WINDOW, peak["end"] + WINDOW]
         gff_chr = gff[gff[0] == peak["chromosome"]]
         for _, row in gff_chr.iterrows():
             # At worst O(n) if peak near "last" gene
-            if row[3] - peak_window[0] >= 0 and row[4] <= peak_window[1]:
+            # Changed condition to peak_start
+            if row[3] - peak_window[0] >= 0 and row[3] <= peak_window[1]:
                 candidate = [row[0], row[3], row[4], row.iloc[-1]]
                 loci.append(candidate)
-                if row[4] + WINDOW + 1 >= peak_window[1]:
+                # Change to start 
+                if row[3] + WINDOW + 1 >= peak_window[1]:
                     break
         # Iterate through both loops, but think of something for more computationally feasible
         if loci:
@@ -311,8 +317,9 @@ class CovPlot:
         if self.peak_loci is not None:
             print(self.peak_loci)
             for _, locus in self.peak_loci.iterrows():
-                arrow = mpatches.FancyArrowPatch((locus["start"], arrow_line_loc), (locus["end"], arrow_line_loc), mutation_scale = MUTATION_SCALE, alpha = 0.8,
+                arrow = mpatches.FancyArrowPatch((locus["start"], arrow_line_loc), (locus["end"], arrow_line_loc), mutation_scale = MUTATION_SCALE, alpha = ALPHA,
                                         color = "black")
+                text_loc = round(arrow_line_loc)
 
                 ax.plot(x, arrow_line, color = arrow_color, linewidth = LINEWIDTH)
                 ax.add_patch(arrow)
@@ -340,7 +347,15 @@ class CovPlot:
             else:
                 self.plot_locus(filtered, output_path = output_path)
         
-    def plot_all_peaks(self, output_path):
+    def plot_all_peaks(self, output_path: Union[str, Path]):
+        """
+        Plot all peaks, get coverage and peaks
+
+        Parameters
+        ----------
+        output_path: Union[str, Path]
+
+        """
         loaded_coverage = self.load_coverage()
         self.peaks = self.get_peaks()
         i = 0
