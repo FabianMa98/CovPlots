@@ -1,13 +1,14 @@
 """
 @author: Fabian Matten
 """ 
+from functools import cached_property
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib import ticker
 
-from constants import WINDOW, MUTATION_SCALE, ALPHA, LINEWIDTH, FACTOR
+from constants import WINDOW, MUTATION_SCALE, ALPHA, LINEWIDTH, FACTOR, OFFSET
 from utils import search_string, get_max_height, get_max_coordinates
 from gff import gff
 
@@ -25,11 +26,10 @@ class CovPlot:
         - Major Refactoring needed:
             - Remove redundancies 
             - Refactor for memory efficiency 
-        - Right now coverage is loaded everytime in a loop, which takes up a lot of memoery
-        - Add text to arrows
+        - Right now coverage is loaded everytime in a loop, which takes up a lot of memoery in mode_loci
         - Do not allow for negative genomic coordinates at window calculation
         - Add strand support 
-        - Think about what happens
+        - Figure out better way for centralization of loci name and implement it in to mode_loci
     """
 
     def __init__(self, coverage: Union[str, Path], gff_coordinates: gff, loci: Union[List, None] = None, peaks: Union[Path, str, None] = None):
@@ -88,14 +88,6 @@ class CovPlot:
     @gff_coordinates.setter
     def gff_coordinates(self, other_gff):
         self._gff = other_gff
-
-    @property
-    def peaks(self):
-        return self._peaks
-    
-    @peaks.setter
-    def peaks(self, other_peaks):
-        self._peaks = other_peaks
 
     @staticmethod
     def load_peaks(peaks):
@@ -195,7 +187,8 @@ class CovPlot:
             # At worst O(n) if peak near "last" gene
             # Changed condition to peak_start
             if row[3] - peak_window[0] >= 0 and row[3] <= peak_window[1]:
-                candidate = [row[0], row[3], row[4], row.iloc[-1]]
+                # Chromosome, start, end, strand, gene_id
+                candidate = [row[0], row[3], row[4], row[6], row.iloc[-1]]
                 loci.append(candidate)
                 # Change to start 
                 if row[3] + WINDOW + 1 >= peak_window[1]:
@@ -215,7 +208,7 @@ class CovPlot:
             final = pd.Series(final)
             # Create dict with values this replace wont work
             final_df = df.replace(to_replace = replace_list, value = final)
-            final_df.rename(columns = {0: "chromosome", 1: "start", 2: "end", 3: "name"}, inplace = True)
+            final_df.rename(columns = {0: "chromosome", 1: "start", 2: "end", 3: "strand", 4: "name"}, inplace = True)
             #print(final_df)
     
             return final_df
@@ -319,10 +312,11 @@ class CovPlot:
             for _, locus in self.peak_loci.iterrows():
                 arrow = mpatches.FancyArrowPatch((locus["start"], arrow_line_loc), (locus["end"], arrow_line_loc), mutation_scale = MUTATION_SCALE, alpha = ALPHA,
                                         color = "black")
-                text_loc = round(arrow_line_loc)
+                text_loc = arrow_line_loc / 1.5 # Move this to constants again
 
                 ax.plot(x, arrow_line, color = arrow_color, linewidth = LINEWIDTH)
                 ax.add_patch(arrow)
+                ax.text(x = ((locus["start"] + locus["end"]) / 2) - 150, y = text_loc, s = locus["name"], size = 8)
         
         ax.set_ylabel("read coverage")
         ax.set_xlabel(f"genomic coordinates for {peak["peak_name"]}")
@@ -360,6 +354,7 @@ class CovPlot:
         self.peaks = self.get_peaks()
         i = 0
         for _, peak in self.peaks.iterrows():
+            print(peak)
             if i == 0:
                 self.plot_peak(output_path = output_path, peak = peak, loaded_coverage = loaded_coverage, plot_label = True)
                 i += 1
